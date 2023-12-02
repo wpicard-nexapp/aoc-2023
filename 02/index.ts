@@ -14,18 +14,12 @@ type CubeGroup = {
 const fileName = argv[2];
 const games = readFileSync(fileName, { encoding: "utf-8" }).split("\n").map(parseGame);
 
-const bag: Record<string, number> = {
-  red: 12,
-  green: 13,
-  blue: 14,
-};
-
 let result = 0;
 
 for (const game of games) {
-  if (gameIsPossible(game)) {
-    result += game.id;
-  }
+  const bag = calculateMinimalBagForGame(game);
+  const bagPower = bag.red * bag.green * bag.blue;
+  result += bagPower;
 }
 
 console.log(result);
@@ -54,10 +48,16 @@ function parseCubeGroup(cubeGroup: string) {
   return { count: Number.parseInt(count), color };
 }
 
-function gameIsPossible({ draws }: Game) {
-  return draws.every(drawIsPossible);
-}
+function calculateMinimalBagForGame({ draws }: Game) {
+  const bag: Record<string, number> = {};
 
-function drawIsPossible(draw: CubeGroup[]) {
-  return draw.every((group) => group.count <= bag[group.color] ?? 0);
+  for (const draw of draws) {
+    for (const group of draw) {
+      if (bag[group.color] < group.count || !bag[group.color]) {
+        bag[group.color] = group.count;
+      }
+    }
+  }
+
+  return bag;
 }
