@@ -7,10 +7,11 @@ const lines = readFileSync(fileName, { encoding: "utf-8" }).split("\n");
 type Position = Readonly<{ x: number; y: number }>;
 type PartNumber = {
   value: number;
+  positions: Position[];
 };
 
 class PartNumberMapping {
-  private readonly mapping = new Map<string, PartNumber>();
+  readonly mapping = new Map<string, PartNumber>();
 
   public getPartNumberAt({ x, y }: Position) {
     return this.mapping.get(`${x}:${y}`);
@@ -51,6 +52,7 @@ function parseEngineSchematic(lines: string[]) {
       } else if (partNumberValue.length > 0) {
         const partNumber: PartNumber = {
           value: Number.parseInt(partNumberValue),
+          positions: partNumberPositions,
         };
         partNumberPositions.forEach((position) => {
           partNumberMapping.setPartNumberAt(position, partNumber);
