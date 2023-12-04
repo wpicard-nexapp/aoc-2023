@@ -22,3 +22,7 @@ describe("The symbol regex finds all symbols from the input", () => {
     expect(symbolRegex.test(symbol)).toBeTrue();
   });
 });
+
+describe("911*90", () => {});
+
+describe("161 at end of line", () => {});
