@@ -7,7 +7,6 @@ const lines = readFileSync(fileName, { encoding: "utf-8" }).split("\n");
 type Position = Readonly<{ x: number; y: number }>;
 type PartNumber = {
   value: number;
-  positions: Position[];
 };
 
 class PartNumberMapping {
@@ -23,10 +22,7 @@ class PartNumberMapping {
 }
 
 const { partNumberMapping, symbolPositions } = parseEngineSchematic(lines);
-const adjacentPartNumber = findAdjacentPartNumber(
-  partNumberMapping,
-  symbolPositions
-);
+const adjacentPartNumber = findAdjacentPartNumber(partNumberMapping, symbolPositions);
 const result = adjacentPartNumber.reduce((sum, { value }) => sum + value, 0);
 
 console.log(result);
@@ -54,13 +50,9 @@ function parseEngineSchematic(lines: string[]) {
         partNumberPositions.push({ x, y });
       }
 
-      if (
-        (!isNumber && partNumberValue.length > 0) ||
-        (isNumber && x === lines[y].length - 1)
-      ) {
+      if ((!isNumber && partNumberValue.length > 0) || (isNumber && x === lines[y].length - 1)) {
         const partNumber: PartNumber = {
           value: Number.parseInt(partNumberValue),
-          positions: partNumberPositions,
         };
         partNumberPositions.forEach((position) => {
           partNumberMapping.setPartNumberAt(position, partNumber);
@@ -74,10 +66,7 @@ function parseEngineSchematic(lines: string[]) {
   return { partNumberMapping, symbolPositions };
 }
 
-function findAdjacentPartNumber(
-  partNumberMapping: PartNumberMapping,
-  symbolPositions: ReadonlyArray<Position>
-) {
+function findAdjacentPartNumber(partNumberMapping: PartNumberMapping, symbolPositions: ReadonlyArray<Position>) {
   const adjacentPartNumber = new Set<PartNumber>();
 
   symbolPositions.forEach((position) => {
