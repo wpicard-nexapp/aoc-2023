@@ -10,7 +10,7 @@ type PartNumber = {
 };
 
 class PartNumberMapping {
-  readonly mapping = new Map<string, PartNumber>();
+  private mapping = new Map<string, PartNumber>();
 
   public getPartNumberAt({ x, y }: Position) {
     return this.mapping.get(`${x}:${y}`);
@@ -21,15 +21,15 @@ class PartNumberMapping {
   }
 }
 
-const { partNumberMapping, symbolPositions } = parseEngineSchematic(lines);
-const adjacentPartNumber = findAdjacentPartNumber(partNumberMapping, symbolPositions);
-const result = adjacentPartNumber.reduce((sum, { value }) => sum + value, 0);
+const { partNumberMapping, gearCandidatePositions } = parseEngineSchematic(lines);
+const gearRatios = findAllGearRatios(partNumberMapping, gearCandidatePositions);
+const result = gearRatios.reduce((sum, value) => sum + value, 0);
 
 console.log(result);
 
 function parseEngineSchematic(lines: string[]) {
   const partNumberMapping = new PartNumberMapping();
-  const symbolPositions = new Array<Position>();
+  const gearCandidatePositions = new Array<Position>();
 
   for (let y = 0; y < lines.length; y++) {
     let partNumberValue = "";
@@ -38,11 +38,11 @@ function parseEngineSchematic(lines: string[]) {
     for (let x = 0; x < lines[y].length; x++) {
       const char = lines[y][x];
 
-      const isSymbol = /[^\d.]/.test(char);
+      const isGearCandidate = /\*/.test(char);
       const isNumber = /\d/.test(char);
 
-      if (isSymbol) {
-        symbolPositions.push({ x, y });
+      if (isGearCandidate) {
+        gearCandidatePositions.push({ x, y });
       }
 
       if (isNumber) {
@@ -63,22 +63,38 @@ function parseEngineSchematic(lines: string[]) {
     }
   }
 
-  return { partNumberMapping, symbolPositions };
+  return { partNumberMapping, gearCandidatePositions };
 }
 
-function findAdjacentPartNumber(partNumberMapping: PartNumberMapping, symbolPositions: ReadonlyArray<Position>) {
-  const adjacentPartNumber = new Set<PartNumber>();
+function findAllGearRatios(
+  partNumberMapping: PartNumberMapping,
+  gearCandidatePositions: ReadonlyArray<Position>
+): number[] {
+  const gearRatios = new Array<number>();
 
-  symbolPositions.forEach((position) => {
-    for (let x = position.x - 1; x <= position.x + 1; x++) {
-      for (let y = position.y - 1; y <= position.y + 1; y++) {
-        const partNumber = partNumberMapping.getPartNumberAt({ x, y });
-        if (partNumber) {
-          adjacentPartNumber.add(partNumber);
-        }
-      }
+  gearCandidatePositions.forEach((position) => {
+    const adjacentPartNumbers = getAdjacentPartNumbers(partNumberMapping, position);
+
+    if (adjacentPartNumbers.size === 2) {
+      const [{ value: number1 }, { value: number2 }] = [...adjacentPartNumbers];
+      gearRatios.push(number1 * number2);
     }
   });
 
-  return [...adjacentPartNumber];
+  return gearRatios;
+}
+
+function getAdjacentPartNumbers(partNumberMapping: PartNumberMapping, position: Position) {
+  const adjacentPartNumbers = new Set<PartNumber>();
+
+  for (let x = position.x - 1; x <= position.x + 1; x++) {
+    for (let y = position.y - 1; y <= position.y + 1; y++) {
+      const partNumber = partNumberMapping.getPartNumberAt({ x, y });
+      if (partNumber) {
+        adjacentPartNumbers.add(partNumber);
+      }
+    }
+  }
+
+  return adjacentPartNumbers;
 }
