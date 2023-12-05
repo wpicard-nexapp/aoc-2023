@@ -8,8 +8,8 @@ type Card = {
 
 const fileName = argv[2];
 const cards = readFileSync(fileName, { encoding: "utf-8" }).split("\n").map(parseCard);
-const cardValues = cards.map(calculateCardValue);
-const result = cardValues.reduce((sum, value) => sum + value, 0);
+const numberOfMatchPerCard = cards.map(calculateNumberOfMatch);
+const result = calculateTotalNumberOfCard(numberOfMatchPerCard);
 
 console.log(result);
 
@@ -35,7 +35,7 @@ function throwError(message: string): never {
   throw new Error(message);
 }
 
-function calculateCardValue(card: Card) {
+function calculateNumberOfMatch(card: Card) {
   let numberOfMatch = 0;
 
   card.winningNumbers.forEach((winningNumber) => {
@@ -44,5 +44,17 @@ function calculateCardValue(card: Card) {
     }
   });
 
-  return numberOfMatch > 0 ? Math.pow(2, numberOfMatch - 1) : 0;
+  return numberOfMatch;
+}
+
+function calculateTotalNumberOfCard(numberOfMatchPerCard: number[]) {
+  const numberOfCards = Array.from({ length: numberOfMatchPerCard.length }, () => 1);
+
+  numberOfMatchPerCard.forEach((numberOfMatch, index) => {
+    for (let cardCopyIndex = index + 1; cardCopyIndex <= index + numberOfMatch; cardCopyIndex++) {
+      numberOfCards[cardCopyIndex] += numberOfCards[index];
+    }
+  });
+
+  return numberOfCards.reduce((totalNumberOfCard, numberOfCard) => totalNumberOfCard + numberOfCard, 0);
 }
