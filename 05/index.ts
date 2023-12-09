@@ -27,10 +27,19 @@ function parseAlmanac(lines: string[]) {
 }
 
 function parseSeedNumbers(line: string) {
-  return line
+  const numbers = line
     .split(": ")[1]
     .split(" ")
     .map((number) => Number.parseInt(number));
+
+  const pairs = new Array<[number, number]>();
+  for (let index = 0; index < numbers.length; index += 2) {
+    const rangeStart = numbers[index];
+    const length = numbers[index + 1];
+    pairs.push([rangeStart, length]);
+  }
+
+  return pairs.flatMap(([rangeStart, length]) => Array.from({ length }, (_, offset) => rangeStart + offset));
 }
 
 function parseAlmanacMapsByType(lines: string[]) {
