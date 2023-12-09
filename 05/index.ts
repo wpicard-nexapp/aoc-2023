@@ -10,13 +10,16 @@ type AlmanacMap = {
 const fileName = argv[2];
 const lines = readFileSync(fileName, { encoding: "utf-8" }).split("\n");
 const { seedNumbers, mapsByType } = parseAlmanac(lines);
-const locations = mapSeedsToLocations(seedNumbers, mapsByType);
-const lowestLocation = locations.reduce(
-  (lowestNumber, locationNumber) => (locationNumber < lowestNumber ? locationNumber : lowestNumber),
-  Number.MAX_SAFE_INTEGER
-);
 
-console.log(lowestLocation);
+console.log(seedNumbers);
+
+// const locations = mapSeedsToLocations(seedNumbers, mapsByType);
+// const lowestLocation = locations.reduce(
+//   (lowestNumber, locationNumber) => (locationNumber < lowestNumber ? locationNumber : lowestNumber),
+//   Number.MAX_SAFE_INTEGER
+// );
+
+// console.log(lowestLocation);
 
 function parseAlmanac(lines: string[]) {
   const [firstLine, , ...rest] = lines;
@@ -39,7 +42,14 @@ function parseSeedNumbers(line: string) {
     pairs.push([rangeStart, length]);
   }
 
-  return pairs.flatMap(([rangeStart, length]) => Array.from({ length }, (_, offset) => rangeStart + offset));
+  const seedNumbers = new Array<number>();
+  for (const [rangeStart, length] of pairs) {
+    for (let seedNumber = rangeStart; seedNumber < rangeStart + length; seedNumber++) {
+      seedNumbers.push(seedNumber);
+    }
+  }
+
+  return seedNumbers;
 }
 
 function parseAlmanacMapsByType(lines: string[]) {
