@@ -1,55 +1,53 @@
 import { readFileSync } from "fs";
 import { argv } from "process";
+import { findLowestLocation } from "./worker";
 
-type AlmanacMap = {
+export type AlmanacMap = {
   destinationNumber: number;
   sourceNumber: number;
   length: number;
 };
 
+export type SeedNumberRange = {
+  rangeStart: number;
+  length: number;
+};
+
 const fileName = argv[2];
 const lines = readFileSync(fileName, { encoding: "utf-8" }).split("\n");
-const { seedNumberGenerator, mapsByType } = parseAlmanac(lines);
+const { seedNumberRanges, mapsByType } = parseAlmanac(lines);
 
-let lowestLocation = Number.MAX_SAFE_INTEGER;
-for (const seedNumber of seedNumberGenerator()) {
-  const location = mapSeedToLocation(seedNumber, mapsByType);
-  if (location < lowestLocation) {
-    lowestLocation = location;
-  }
-}
+const promises = Array.from(seedNumberRanges, (range) => findLowestLocation(range, mapsByType));
+const lowestLocations = await Promise.all(promises);
+const lowestLocation = lowestLocations.reduce(
+  (lowest, location) => (location < lowest ? location : lowest),
+  Number.MAX_SAFE_INTEGER
+);
+
 console.log(lowestLocation);
 
 function parseAlmanac(lines: string[]) {
   const [firstLine, , ...rest] = lines;
-  const { seedNumberGenerator } = parseSeedNumbers(firstLine);
+  const seedNumberRanges = parseSeedNumberRanges(firstLine);
   const mapsByType = parseAlmanacMapsByType(rest);
 
-  return { seedNumberGenerator, mapsByType };
+  return { seedNumberRanges, mapsByType };
 }
 
-function parseSeedNumbers(line: string) {
+function parseSeedNumberRanges(line: string) {
   const numbers = line
     .split(": ")[1]
     .split(" ")
     .map((number) => Number.parseInt(number));
 
-  const pairs = new Array<[number, number]>();
+  const ranges = new Array<SeedNumberRange>();
   for (let index = 0; index < numbers.length; index += 2) {
     const rangeStart = numbers[index];
     const length = numbers[index + 1];
-    pairs.push([rangeStart, length]);
+    ranges.push({ rangeStart, length });
   }
 
-  function* seedNumberGenerator() {
-    for (const [rangeStart, length] of pairs) {
-      for (let seedNumber = rangeStart; seedNumber < rangeStart + length; seedNumber++) {
-        yield seedNumber;
-      }
-    }
-  }
-
-  return { seedNumberGenerator };
+  return ranges;
 }
 
 function parseAlmanacMapsByType(lines: string[]) {
@@ -75,29 +73,4 @@ function parseAlmanacMapsByType(lines: string[]) {
   });
 
   return mapsByType;
-}
-
-function mapSeedsToLocations(seedNumbers: number[], mapsByType: AlmanacMap[][]) {
-  return seedNumbers.map((seedNumber: number) => mapSeedToLocation(seedNumber, mapsByType));
-}
-
-function mapSeedToLocation(seedNumber: number, mapsByType: AlmanacMap[][]) {
-  let currentNumber = seedNumber;
-
-  mapsByType.forEach((mapsForOneType) => {
-    currentNumber = mapToNextType(currentNumber, mapsForOneType);
-  });
-
-  return currentNumber;
-}
-
-function mapToNextType(currentNumber: number, mapsForOneType: AlmanacMap[]) {
-  for (const { sourceNumber, destinationNumber, length } of mapsForOneType) {
-    if (sourceNumber <= currentNumber && currentNumber < sourceNumber + length) {
-      const delta = currentNumber - sourceNumber;
-      return destinationNumber + delta;
-    }
-  }
-
-  return currentNumber;
 }
