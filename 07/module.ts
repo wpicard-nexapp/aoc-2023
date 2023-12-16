@@ -16,6 +16,7 @@ export function parseHand(line: string): Hand {
 
 function parseCardValue(card: string) {
   const valueByCard: Record<string, number> = {
+    J: 0,
     "1": 1,
     "2": 2,
     "3": 3,
@@ -26,17 +27,16 @@ function parseCardValue(card: string) {
     "8": 8,
     "9": 9,
     T: 10,
-    J: 11,
-    Q: 12,
-    K: 14,
-    A: 15,
+    Q: 11,
+    K: 12,
+    A: 13,
   };
 
   return valueByCard[card];
 }
 
-function calculateTypeValue(cards: string) {
-  const descendingCounts = calculateCountByType(cards).sort((a, b) => -(a - b));
+export function calculateTypeValue(cards: string) {
+  const descendingCounts = calculateCountByType(cards).toSorted((a, b) => -(a - b));
 
   if (descendingCounts[0] === 5) {
     return 6;
@@ -68,7 +68,20 @@ function calculateCountByType(cards: string) {
     countByType[card] = previousCount + 1;
   }
 
-  return Object.values(countByType);
+  let jokerCount = countByType["J"] ?? 0;
+  const descendingCountByType = Object.entries(countByType)
+    .toSorted(([, countA], [, countB]) => -(countA - countB))
+    .map(([card, count]) => ({ card, count }));
+
+  for (let index = 0; index < descendingCountByType.length; index++) {
+    if (descendingCountByType[index].card !== "J") {
+      descendingCountByType[index].count += jokerCount;
+      jokerCount = 0;
+      break;
+    }
+  }
+
+  return descendingCountByType.map(({ card, count }) => (card === "J" ? jokerCount : count));
 }
 
 export function compareHand(hand1: Hand, hand2: Hand) {
